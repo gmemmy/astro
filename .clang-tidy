@@ -1,0 +1,18 @@
+Checks: >
+  -*,
+  bugprone-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  modernize-*,
+  cppcoreguidelines-*,
+  clang-analyzer-*,
+  hicpp-*,-hicpp-signed-bitwise,-hicpp-explicit-conversions
+WarningsAsErrors: ''
+HeaderFilterRegex: 'src/.*'
+AnalyzeTemporaryDtors: false
+FormatStyle: none
+User: astro
+CheckOptions:
+  - key:             modernize-use-override.UseOverride
+    value:           '1'

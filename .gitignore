@@ -1,0 +1,49 @@
+# OS
+.DS_Store
+
+# Editors/IDE
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*.swo
+
+# Python venv
+.venv/
+
+# Build directories
+build/
+build-*/
+out/
+cmake-build-*/
+**/build/
+**/build-*/
+**/out/
+**/cmake-build-*/
+
+# CMake generated files
+**/CMakeFiles/
+**/CMakeCache.txt
+**/Testing/
+**/Makefile
+**/cmake_install.cmake
+**/*.dir/
+CMakeUserPresets.json
+CMakeUserPresets.json.user
+
+# Conan local build outputs inside build folder are already ignored
+# but ignore common cache dirs at repo-level just in case
+.cache/
+
+# clang/linters
+compile_commands.json
+.clangd/
+.ccls-cache/
+
+# Devcontainers (local-only)
+devcontainer.json
+.devcontainer/
+
+# Local env
+.env
+.env.*

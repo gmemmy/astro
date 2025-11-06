@@ -1,0 +1,11 @@
+name: ci
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    if: ${{ false }}
+    runs-on: ubuntu-22.04
+    steps:
+      - run: echo "CI temporarily disabled"

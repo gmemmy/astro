@@ -1,0 +1,14 @@
+[requires]
+spdlog/1.13.0
+libsodium/1.0.20
+gtest/1.14.0
+
+[generators]
+CMakeDeps
+CMakeToolchain
+
+[layout]
+cmake_layout
+
+[options]
+spdlog/*:header_only=True

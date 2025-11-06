@@ -1,0 +1,17 @@
+name: sanitizers
+
+on:
+  workflow_dispatch:
+
+jobs:
+  asan-ubsan:
+    if: ${{ false }}
+    runs-on: ubuntu-22.04
+    steps:
+      - run: echo "Sanitizers job temporarily disabled"
+
+  clang-tidy:
+    if: ${{ false }}
+    runs-on: ubuntu-22.04
+    steps:
+      - run: echo "clang-tidy job temporarily disabled"

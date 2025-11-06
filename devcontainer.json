@@ -1,0 +1,21 @@
+{
+  "name": "Astro Dev",
+  "dockerFile": "Dockerfile",
+  "remoteUser": "vscode",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools-extension-pack",
+        "ms-vscode.cmake-tools",
+        "twxs.cmake",
+        "matepek.vscode-catch2-test-adapter",
+        "llvm-vs-code-extensions.vscode-clangd"
+      ]
+    }
+  },
+  "features": {},
+  "postCreateCommand": "conan profile detect --force || true",
+  "mounts": [
+    "source=${localEnv:HOME}/.conan2,target=/home/vscode/.conan2,type=bind"
+  ]
+}
