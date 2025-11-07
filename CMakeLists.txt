@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.22)
 
+if (EXISTS "${CMAKE_SOURCE_DIR}/build/conan_toolchain.cmake" AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/build/conan_toolchain.cmake" CACHE FILEPATH "" FORCE)
+endif()
+
 project(Astro
   VERSION 0.1.0
   DESCRIPTION "Astro - a minimal C++20 blockchain node (MVP)"
@@ -43,7 +47,14 @@ if(sodium_FOUND)
   add_compile_definitions(ASTRO_HAVE_SODIUM)
   message(STATUS "libsodium found")
 endif()
+find_package(OpenSSL QUIET)
+if(OpenSSL_FOUND)
+  message(STATUS "OpenSSL found")
+endif()
 
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 OLD)
+endif()
 if(ASTRO_WITH_NET)
   find_package(Boost QUIET COMPONENTS system)
   if(Boost_FOUND)
@@ -69,6 +80,9 @@ endif()
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/store/blockstore.cpp)
   list(APPEND ASTRO_CORE_SOURCES src/store/blockstore.cpp)
 endif()
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/core/hash.cpp)
+  list(APPEND ASTRO_CORE_SOURCES src/core/hash.cpp)
+endif()
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/net/p2p.cpp)
   list(APPEND ASTRO_CORE_SOURCES src/net/p2p.cpp)
 endif()
@@ -81,7 +95,10 @@ endif()
 
 if(ASTRO_CORE_SOURCES)
   add_library(astro_core ${ASTRO_CORE_SOURCES})
-  target_include_directories(astro_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+  target_include_directories(astro_core PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+  )
   if(spdlog_FOUND)
     target_link_libraries(astro_core PUBLIC spdlog::spdlog_header_only)
   endif()
@@ -93,6 +110,13 @@ if(ASTRO_CORE_SOURCES)
       target_link_libraries(astro_core PRIVATE Boost::system)
     else()
       message(STATUS "Boost::system target not available; skipping Boost link")
+    endif()
+  endif()
+  if(OpenSSL_FOUND)
+    if(TARGET OpenSSL::Crypto)
+      target_link_libraries(astro_core PRIVATE OpenSSL::Crypto)
+    else()
+      target_link_libraries(astro_core PRIVATE OpenSSL::SSL OpenSSL::Crypto)
     endif()
   endif()
 endif()
@@ -113,35 +137,60 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/cli.cpp)
 endif()
 
 add_executable(astro-node ${ASTRO_NODE_SOURCES})
-target_include_directories(astro-node PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(astro-node PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 if(TARGET astro_core)
   target_link_libraries(astro-node PRIVATE astro_core)
 endif()
 if(spdlog_FOUND)
   target_link_libraries(astro-node PRIVATE spdlog::spdlog_header_only)
 endif()
-# Do not link to astro_crypto by default to keep minimal demo independent of libsodium
 
 set_target_properties(astro-node PROPERTIES OUTPUT_NAME "astro-node")
 install(TARGETS astro-node RUNTIME DESTINATION bin)
 
-if(ASTRO_BUILD_TESTS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/test_types.cpp)
-  enable_testing()
-  find_package(GTest QUIET CONFIG)
-  if(NOT GTest_FOUND)
-    message(STATUS "GTest not found - fetching with FetchContent")
-    FetchContent_Declare(
-      googletest
-      URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-      URL_HASH SHA256=7e33b4aa297927651c01fb9b31c8ed6dfa8f783742c2f7631c6fba744d6c0aad
-    )
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(googletest)
+if(ASTRO_BUILD_TESTS)
+  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+    enable_testing()
+    find_package(GTest QUIET CONFIG)
+    if(NOT GTest_FOUND)
+      message(STATUS "GTest not found - fetching with FetchContent (git)")
+      if(POLICY CMP0135)
+        cmake_policy(SET CMP0135 NEW)
+      endif()
+      FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.14.0
+        GIT_SHALLOW TRUE
+      )
+      set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+      FetchContent_MakeAvailable(googletest)
+    endif()
+    add_subdirectory(tests)
+  elseif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/tests)
+    enable_testing()
+    find_package(GTest QUIET CONFIG)
+    if(NOT GTest_FOUND)
+      message(STATUS "GTest not found - fetching with FetchContent (git)")
+      if(POLICY CMP0135)
+        cmake_policy(SET CMP0135 NEW)
+      endif()
+      FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.14.0
+        GIT_SHALLOW TRUE
+      )
+      set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+      FetchContent_MakeAvailable(googletest)
+    endif()
+    add_subdirectory(src/tests)
+  else()
+    message(STATUS "Tests skipped (no tests/ or src/tests/ directory)")
   endif()
-
-  add_subdirectory(src/tests)
-else()
-  message(STATUS "Tests skipped (sources not present)")
 endif()
 
 find_program(CLANG_FORMAT_EXE NAMES clang-format)

@@ -2,6 +2,7 @@
 spdlog/1.13.0
 libsodium/1.0.20
 gtest/1.14.0
+openssl/3.3.1
 
 [generators]
 CMakeDeps
