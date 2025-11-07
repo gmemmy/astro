@@ -13,3 +13,24 @@ TEST(HashTests, Hash160_KnownValue) {
     auto h = hash160("hello");
     EXPECT_EQ(to_hex(h).substr(0, 10), "b6a9c8c230"); // partial match
 }
+
+TEST(HashTests, SHA256_EmptyString) {
+  auto h = sha256("");
+  EXPECT_EQ(to_hex(h),
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+}
+
+TEST(HashTests, Hash160_FullKnownValue_Hello) {
+  auto h = hash160("hello");
+  EXPECT_EQ(to_hex(h), "b6a9c8c230722b7c748331a8b450f05566dc7d0f");
+}
+
+TEST(HashTests, Hash160_EmptyString) {
+  auto h = hash160("");
+  EXPECT_EQ(to_hex(h), "b472a266d0bd89c13706a4132ccfb16f7c3b9fcb");
+}
+
+TEST(HashTests, ToHex_FormatsLeadingZeros) {
+  std::vector<uint8_t> data{0x00, 0x01, 0x0A, 0xFF};
+  EXPECT_EQ(toHex(data), "00010aff");
+}
