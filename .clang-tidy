@@ -1,18 +1,45 @@
 Checks: >
   -*,
-  bugprone-*,
-  performance-*,
-  portability-*,
-  readability-*,
-  modernize-*,
-  cppcoreguidelines-*,
-  clang-analyzer-*,
-  hicpp-*,-hicpp-signed-bitwise,-hicpp-explicit-conversions
+  readability-identifier-naming
 WarningsAsErrors: ''
-HeaderFilterRegex: 'src/.*'
+HeaderFilterRegex: '^(include/astro/|src/)'
 AnalyzeTemporaryDtors: false
-FormatStyle: none
-User: astro
+FormatStyle:     none
+User:            astro
+
 CheckOptions:
-  - key:             modernize-use-override.UseOverride
-    value:           '1'
+  # Types
+  - { key: readability-identifier-naming.ClassCase,           value: CamelCase }
+  - { key: readability-identifier-naming.StructCase,          value: CamelCase }
+  - { key: readability-identifier-naming.EnumCase,            value: CamelCase }
+  - { key: readability-identifier-naming.TypeAliasCase,       value: CamelCase }
+  - { key: readability-identifier-naming.EnumConstantCase,    value: CamelCase }
+
+  # Functions
+  - { key: readability-identifier-naming.FunctionCase,        value: lower_case }
+  - { key: readability-identifier-naming.MethodCase,          value: lower_case }
+
+  # Variables and parameters
+  - { key: readability-identifier-naming.VariableCase,        value: lower_case }
+  - { key: readability-identifier-naming.ParameterCase,       value: lower_case }
+  - { key: readability-identifier-naming.LocalConstantCase,   value: CamelCase }
+  - { key: readability-identifier-naming.LocalConstantPrefix, value: k }
+  - { key: readability-identifier-naming.GlobalConstantCase,  value: CamelCase }
+  - { key: readability-identifier-naming.GlobalConstantPrefix,value: k }
+
+  # Data members
+  - { key: readability-identifier-naming.MemberCase,          value: lower_case }
+  - { key: readability-identifier-naming.MemberSuffix,        value: _ }
+  - { key: readability-identifier-naming.PrivateMemberSuffix, value: _ }
+  - { key: readability-identifier-naming.ProtectedMemberSuffix,value: _ }
+  - { key: readability-identifier-naming.StaticMemberCase,    value: lower_case }
+  - { key: readability-identifier-naming.StaticConstantCase,  value: CamelCase }
+  - { key: readability-identifier-naming.StaticConstantPrefix,value: k }
+
+  # Namespaces and macros
+  - { key: readability-identifier-naming.NamespaceCase,       value: lower_case }
+  - { key: readability-identifier-naming.MacroDefinitionCase, value: UPPER_CASE }
+
+  # Relaxations
+  - { key: readability-identifier-naming.IgnoreMainLikeFunctions, value: 1 }
+  - { key: readability-identifier-naming.IgnoreFailedSplit,        value: 1 }
