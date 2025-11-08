@@ -8,6 +8,8 @@
 #include <astro/core/hash.hpp>
 #include <astro/core/transaction.hpp>
 #include <astro/core/serializer.hpp>
+#include <astro/core/block.hpp>
+#include <chrono>
 
 using namespace astro::core;
 
@@ -16,7 +18,8 @@ static void print_usage() {
     "Astro Node CLI\n\n"
     "Usage:\n"
     "  astro-node demo-keys [--curve CURVE] [--message MESSAGE]\n"
-    "  astro-node demo-tx   [--amount N] [--nonce N] [--to LABEL]\n\n"
+    "  astro-node demo-tx   [--amount N] [--nonce N] [--to LABEL]\n"
+    "  astro-node demo-genesis\n\n"
     "Options:\n"
     "  --curve    EC curve name (default: secp256k1)\n"
     "  --message  Message to sign (default: 'astro demo')\n"
@@ -32,8 +35,8 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  const std::string cmd = argv[1];
-  if (cmd == "demo-keys") {
+  const std::string command = argv[1];
+  if (command == "demo-keys") {
     std::string curve = "secp256k1";
     std::string message = "astro demo";
 
@@ -63,10 +66,10 @@ int main(int argc, char** argv) {
     }
 
     try {
-      auto kp = generate_ec_keypair(curve);
+      auto key_pair = generate_ec_keypair(curve);
 
-      std::string priv_pem(kp.privkey_pem.begin(), kp.privkey_pem.end());
-      std::string pub_pem(kp.pubkey_pem.begin(), kp.pubkey_pem.end());
+      std::string priv_pem(key_pair.privkey_pem.begin(), key_pair.privkey_pem.end());
+      std::string pub_pem(key_pair.pubkey_pem.begin(), key_pair.pubkey_pem.end());
 
       std::cout << "Curve: " << curve << "\n";
       std::cout << "Message: " << message << "\n\n";
@@ -74,11 +77,11 @@ int main(int argc, char** argv) {
       std::cout << "Private Key (PEM):\n" << priv_pem << "\n";
       std::cout << "Public Key (PEM):\n" << pub_pem << "\n";
 
-      auto sig = sign_message(kp.privkey_pem, message);
-      std::cout << "Signature (DER hex):\n" << toHex(sig) << "\n";
+      auto signature = sign_message(key_pair.privkey_pem, message);
+      std::cout << "Signature (DER hex):\n" << toHex(signature) << "\n";
 
-      bool ok = verify_message(kp.pubkey_pem, message, sig);
-      std::cout << "Verification: " << (ok ? "OK" : "FAIL") << "\n";
+      bool verified = verify_message(key_pair.pubkey_pem, message, signature);
+      std::cout << "Verification: " << (verified ? "OK" : "FAIL") << "\n";
     } catch (const std::exception& ex) {
       std::fprintf(stderr, "Error: %s\n", ex.what());
       return 1;
@@ -86,7 +89,7 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  if (cmd == "demo-tx") {
+  if (command == "demo-tx") {
     uint64_t amount = 123;
     uint64_t nonce = 1;
     std::string to = "demo-recipient";
@@ -121,28 +124,39 @@ int main(int argc, char** argv) {
     }
 
     try {
-      auto kp = generate_ec_keypair();
+      auto key_pair = generate_ec_keypair();
 
       Transaction tx;
       tx.version = 1;
       tx.nonce = nonce;
       tx.amount = amount;
-      tx.from_pub_pem = kp.pubkey_pem; // PEM bytes
+      tx.from_pub_pem = key_pair.pubkey_pem; // PEM bytes
       tx.to_label = to;
 
-      auto h = tx.tx_hash();
-      tx.sign(kp.privkey_pem);
+      auto tx_hash = tx.tx_hash();
+      tx.sign(key_pair.privkey_pem);
 
-      std::cout << "tx.hash: " << to_hex(std::span<const uint8_t>(h.data(), h.size())) << "\n";
+      std::cout << "tx.hash: " << to_hex(std::span<const uint8_t>(tx_hash.data(), tx_hash.size())) << "\n";
       std::cout << "signature.size: " << tx.signature.size() << " bytes\n";
       std::cout << "verify: " << (tx.verify() ? "OK" : "FAIL") << "\n";
 
-      auto bytes = tx.serialize(false);
-      std::cout << "serialized.len: " << bytes.size() << "\n";
+      auto serialized_bytes = tx.serialize(false);
+      std::cout << "serialized.len: " << serialized_bytes.size() << "\n";
     } catch (const std::exception& ex) {
       std::fprintf(stderr, "Error: %s\n", ex.what());
       return 1;
     }
+    return 0;
+  }
+
+  if (command == "demo-genesis") {
+    uint64_t now = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::seconds>(
+                   std::chrono::system_clock::now().time_since_epoch()).count());
+    auto genesis_block = make_genesis_block("Astro: Born from bytes.", now);
+    auto header_hash = genesis_block.header.hash();
+    std::cout << "genesis.time: " << genesis_block.header.timestamp << "\n";
+    std::cout << "genesis.hash: " << to_hex(std::span<const uint8_t>(header_hash.data(), header_hash.size())) << "\n";
+    std::cout << "txs: " << genesis_block.transactions.size() << "\n";
     return 0;
   }
 

@@ -9,6 +9,7 @@ namespace astro::core {
 
   auto sha256(std::span<const uint8_t> data) -> Hash256;
   auto hash160(std::span<const uint8_t> data) -> Hash160;
+  auto hash_concat(std::span<const uint8_t> left, std::span<const uint8_t> right) -> Hash256;
 
   inline auto sha256(const std::string& data) -> Hash256 {
     return sha256(std::span<const uint8_t>(
