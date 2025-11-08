@@ -3,6 +3,7 @@
 #include <span>
 #include <sstream>
 #include <iomanip>
+#include <vector>
 
 namespace astro::core {
   auto toHex(std::span<const uint8_t> data) -> std::string {
@@ -53,5 +54,13 @@ namespace astro::core {
     }
     EVP_MD_CTX_free(ctx);
     return out;
+  }
+
+  auto hash_concat(std::span<const uint8_t> left, std::span<const uint8_t> right) -> Hash256 {
+    std::vector<uint8_t> combined;
+    combined.reserve(left.size() + right.size());
+    combined.insert(combined.end(), left.begin(), left.end());
+    combined.insert(combined.end(), right.begin(), right.end());
+    return sha256(std::span<const uint8_t>(combined.data(), combined.size()));
   }
 }

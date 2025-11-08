@@ -8,72 +8,72 @@ using namespace astro::core;
 
 TEST(Transaction, RoundTripAndVerify) {
   ASSERT_TRUE(crypto_init());
-  auto kp = generate_ec_keypair();
+  auto key_pair = generate_ec_keypair();
 
-  Transaction tx;
-  tx.version = 1;
-  tx.nonce   = 42;
-  tx.amount  = 1000;
-  tx.from_pub_pem = kp.pubkey_pem;   // PEM bytes
-  tx.to_label     = "alice";
+  Transaction transaction;
+  transaction.version = 1;
+  transaction.nonce   = 42;
+  transaction.amount  = 1000;
+  transaction.from_pub_pem = key_pair.pubkey_pem;   // PEM bytes
+  transaction.to_label     = "alice";
 
   // hash before signing is stable
-  auto h1 = tx.tx_hash();
+  auto tx_hash_1 = transaction.tx_hash();
 
   // sign
-  tx.sign(kp.privkey_pem);
-  ASSERT_FALSE(tx.signature.empty());
-  EXPECT_TRUE(tx.verify());
+  transaction.sign(key_pair.privkey_pem);
+  ASSERT_FALSE(transaction.signature.empty());
+  EXPECT_TRUE(transaction.verify());
 
   // serialize/deserialize round-trip
-  auto bytes = tx.serialize(false);
+  auto serialized_bytes = transaction.serialize(false);
   // For now we don't have a full deserialize API—use ByteReader to spot-check
-  ByteReader r(bytes);
-  EXPECT_EQ(r.read_u8(), 0xA1);
-  EXPECT_EQ(r.read_u8(), 0x01);
-  EXPECT_EQ(r.read_u32(), 1u);
-  EXPECT_EQ(r.read_u32(), 1u);
-  EXPECT_EQ(r.read_u64(), 42u);
-  EXPECT_EQ(r.read_u64(), 1000u);
-  auto pub = r.read_bytes();
-  EXPECT_FALSE(pub.empty());
-  auto to  = r.read_string();
-  EXPECT_EQ(to, "alice");
-  auto sig = r.read_bytes();
-  EXPECT_FALSE(sig.empty());
+  ByteReader reader(serialized_bytes);
+  EXPECT_EQ(reader.read_u8(), 0xA1);
+  EXPECT_EQ(reader.read_u8(), 0x01);
+  EXPECT_EQ(reader.read_u32(), 1u);
+  EXPECT_EQ(reader.read_u32(), 1u);
+  EXPECT_EQ(reader.read_u64(), 42u);
+  EXPECT_EQ(reader.read_u64(), 1000u);
+  auto pubkey_bytes = reader.read_bytes();
+  EXPECT_FALSE(pubkey_bytes.empty());
+  auto to_label  = reader.read_string();
+  EXPECT_EQ(to_label, "alice");
+  auto signature_bytes = reader.read_bytes();
+  EXPECT_FALSE(signature_bytes.empty());
 
   // any byte flip should break verification
-  bytes.back() ^= 0x01;
-  ByteReader r2(bytes);
-  r2.read_u8(); r2.read_u8(); r2.read_u32(); r2.read_u32(); r2.read_u64(); r2.read_u64();
-  auto pub2 = r2.read_bytes();
-  auto to2  = r2.read_string();
-  auto sig2 = r2.read_bytes();
+  serialized_bytes.back() ^= 0x01;
+  ByteReader reader2(serialized_bytes);
+  reader2.read_u8(); reader2.read_u8(); reader2.read_u32(); reader2.read_u32(); reader2.read_u64(); reader2.read_u64();
+  auto pubkey_bytes_2 = reader2.read_bytes();
+  auto to_label_2  = reader2.read_string();
+  auto signature_bytes_2 = reader2.read_bytes();
 
-  Transaction tampered;
-  tampered.version = 1;
-  tampered.nonce = 42;
-  tampered.amount = 1000;
-  tampered.from_pub_pem = pub2;
-  tampered.to_label = to2;
-  tampered.signature = sig2;
+  Transaction tampered_transaction;
+  tampered_transaction.version = 1;
+  tampered_transaction.nonce = 42;
+  tampered_transaction.amount = 1000;
+  tampered_transaction.from_pub_pem = pubkey_bytes_2;
+  tampered_transaction.to_label = to_label_2;
+  tampered_transaction.signature = signature_bytes_2;
 
-  EXPECT_FALSE(tampered.verify());
+  EXPECT_FALSE(tampered_transaction.verify());
 }
 
 TEST(Transaction, HashDeterminism) {
   ASSERT_TRUE(crypto_init());
-  auto kp = generate_ec_keypair();
+  auto key_pair2 = generate_ec_keypair();
 
-  Transaction a, b;
-  a.version = b.version = 1;
-  a.nonce = b.nonce = 7;
-  a.amount = b.amount = 55;
-  a.from_pub_pem = b.from_pub_pem = kp.pubkey_pem;
-  a.to_label = b.to_label = "bob";
+  Transaction tx_a, tx_b;
+  tx_a.version = tx_b.version = 1;
+  tx_a.nonce = tx_b.nonce = 7;
+  tx_a.amount = tx_b.amount = 55;
+  tx_a.from_pub_pem = tx_b.from_pub_pem = key_pair2.pubkey_pem;
+  tx_a.to_label = tx_b.to_label = "bob";
 
-  auto hA = a.tx_hash();
-  auto hB = b.tx_hash();
-  EXPECT_EQ(to_hex(std::span<const uint8_t>(hA.data(), hA.size())),
-            to_hex(std::span<const uint8_t>(hB.data(), hB.size())));
+  auto tx_hash_a = tx_a.tx_hash();
+  auto tx_hash_b = tx_b.tx_hash();
+  EXPECT_EQ(to_hex(std::span<const uint8_t>(tx_hash_a.data(), tx_hash_a.size())),
+            to_hex(std::span<const uint8_t>(tx_hash_b.data(), tx_hash_b.size())));
 }
