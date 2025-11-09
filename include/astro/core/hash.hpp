@@ -19,6 +19,9 @@ namespace astro::core {
     return hash160(std::span<const uint8_t>(
         reinterpret_cast<const uint8_t*>(data.data()), data.size()));
   }
+  // inline auto hash_concat(const Hash256& left, const Hash256& right) -> Hash256 {
+  //   return hash_concat(std::span<const uint8_t>(left.data(), left.size()), std::span<const uint8_t>(right.data(), right.size()));
+  // }
 
   auto toHex(std::span<const uint8_t> data) -> std::string;
   inline std::string to_hex(std::span<const uint8_t> data) { return toHex(data); }

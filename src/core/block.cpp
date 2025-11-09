@@ -1,8 +1,8 @@
 #include "astro/core/block.hpp"
 #include "astro/core/serializer.hpp"
 #include "astro/core/hash.hpp"
+#include "astro/core/merkle.hpp"
 
-#include <chrono>
 #include <cstring>
 
 namespace astro::core {
@@ -11,11 +11,9 @@ namespace astro::core {
     ByteWriter writer;
     writer.write_u32(version);
 
-    writer.write_u32(32);
-    writer.write_bytes(std::span<const uint8_t>(prev_hash.data(), prev_hash.size()));
+    writer.write_raw(std::span<const uint8_t>(prev_hash.data(), prev_hash.size()));
 
-    writer.write_u32(32);
-    writer.write_bytes(std::span<const uint8_t>(merkle_root.data(), merkle_root.size()));
+    writer.write_raw(std::span<const uint8_t>(merkle_root.data(), merkle_root.size()));
 
     writer.write_u64(timestamp);
     writer.write_u64(nonce);
@@ -31,14 +29,13 @@ namespace astro::core {
     ByteWriter writer;
 
     auto header_bytes = header.serialize();
-    writer.write_u32(static_cast<uint32_t>(header_bytes.size()));
-    writer.write_bytes(std::span<const uint8_t>(header_bytes.data(), header_bytes.size()));
+    writer.write_raw(std::span<const uint8_t>(header_bytes.data(), header_bytes.size()));
 
     writer.write_u32(static_cast<uint32_t>(transactions.size()));
     for (const auto& tx : transactions) {
       auto tx_bytes = tx.serialize(false);
       writer.write_u32(static_cast<uint32_t>(tx_bytes.size()));
-      writer.write_bytes(std::span<const uint8_t>(tx_bytes.data(), tx_bytes.size()));
+      writer.write_raw(std::span<const uint8_t>(tx_bytes.data(), tx_bytes.size()));
     }
     return writer.take();
   }
@@ -49,27 +46,10 @@ namespace astro::core {
   }
 
   Hash256 compute_merkle_root(const std::vector<Transaction>& transactions) {
-    if (transactions.empty()) return empty_merkle_root();
-
-    std::vector<Hash256> level_hashes;
-    level_hashes.reserve(transactions.size());
-    for (const auto& tx : transactions) level_hashes.push_back(tx.tx_hash());
-
-    while (level_hashes.size() > 1) {
-      std::vector<Hash256> next_level;
-      next_level.reserve(level_hashes.size() + 1 / 2);
-      for (size_t i = 0; i < level_hashes.size(); i += 2) {
-        const Hash256& left = level_hashes[i];
-        const Hash256& right = (i + 1 < level_hashes.size()) ? level_hashes[i + 1] : level_hashes[i];
-        Hash256 pair_hash = hash_concat(
-          std::span<const uint8_t>(left.data(), left.size()),
-          std::span<const uint8_t>(right.data(), right.size())
-        );
-        next_level.push_back(pair_hash);
-      }
-      level_hashes.swap(next_level);
-    }
-    return level_hashes.front();
+   std::vector<Hash256> leaves;
+   leaves.reserve(transactions.size());
+   for (const auto& tx : transactions) leaves.push_back(tx.tx_hash());
+   return root(leaves);
   }
 
   Block make_genesis_block(std::string genesis_note, uint64_t unix_time) {

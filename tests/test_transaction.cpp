@@ -17,9 +17,6 @@ TEST(Transaction, RoundTripAndVerify) {
   transaction.from_pub_pem = key_pair.pubkey_pem;   // PEM bytes
   transaction.to_label     = "alice";
 
-  // hash before signing is stable
-  auto tx_hash_1 = transaction.tx_hash();
-
   // sign
   transaction.sign(key_pair.privkey_pem);
   ASSERT_FALSE(transaction.signature.empty());
