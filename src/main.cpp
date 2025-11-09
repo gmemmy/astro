@@ -9,6 +9,7 @@
 #include <astro/core/transaction.hpp>
 #include <astro/core/serializer.hpp>
 #include <astro/core/block.hpp>
+#include <astro/core/merkle.hpp>
 #include <chrono>
 
 using namespace astro::core;
@@ -19,13 +20,16 @@ static void print_usage() {
     "Usage:\n"
     "  astro-node demo-keys [--curve CURVE] [--message MESSAGE]\n"
     "  astro-node demo-tx   [--amount N] [--nonce N] [--to LABEL]\n"
-    "  astro-node demo-genesis\n\n"
+    "  astro-node demo-genesis\n"
+    "  astro-node demo-merkle [--leaves CSV] [--index N]\n\n"
     "Options:\n"
     "  --curve    EC curve name (default: secp256k1)\n"
     "  --message  Message to sign (default: 'astro demo')\n"
     "  --amount   Transaction amount (default: 123)\n"
     "  --nonce    Transaction nonce (default: 1)\n"
     "  --to       Recipient label (default: 'demo-recipient')\n"
+    "  --leaves   CSV of leaf strings (default: a,b,c,d,e)\n"
+    "  --index    Leaf index for proof (default: 0)\n"
   );
 }
 
@@ -157,6 +161,60 @@ int main(int argc, char** argv) {
     std::cout << "genesis.time: " << genesis_block.header.timestamp << "\n";
     std::cout << "genesis.hash: " << to_hex(std::span<const uint8_t>(header_hash.data(), header_hash.size())) << "\n";
     std::cout << "txs: " << genesis_block.transactions.size() << "\n";
+    return 0;
+  }
+
+  if (command == "demo-merkle") {
+    std::string csv = "a,b,c,d,e";
+    size_t index = 0;
+    for (int i = 2; i < argc; ++i) {
+      std::string arg = argv[i];
+      if (arg.rfind("--leaves=", 0) == 0) {
+        csv = arg.substr(9);
+      } else if (arg == "--leaves" && i + 1 < argc) {
+        csv = argv[++i];
+      } else if (arg.rfind("--index=", 0) == 0) {
+        index = static_cast<size_t>(std::stoull(arg.substr(8)));
+      } else if (arg == "--index" && i + 1 < argc) {
+        index = static_cast<size_t>(std::stoull(argv[++i]));
+      } else if (arg == "-h" || arg == "--help") {
+        print_usage();
+        return 0;
+      } else {
+        std::fprintf(stderr, "Unknown option: %s\n", arg.c_str());
+        print_usage();
+        return 1;
+      }
+    }
+    std::vector<std::string> parts;
+    {
+      std::string cur;
+      for (char c : csv) {
+        if (c == ',') { parts.push_back(cur); cur.clear(); }
+        else { cur.push_back(c); }
+      }
+      parts.push_back(cur);
+    }
+    if (parts.empty()) {
+      std::fprintf(stderr, "No leaves provided\n");
+      return 1;
+    }
+    std::vector<Hash256> leaves;
+    leaves.reserve(parts.size());
+    for (const auto& s : parts) leaves.push_back(sha256(s));
+    if (index >= leaves.size()) index = leaves.size() - 1;
+    auto R = root(leaves);
+    std::cout << "leaves: " << leaves.size() << "\n";
+    std::cout << "root:   " << to_hex(std::span<const uint8_t>(R.data(), R.size())) << "\n";
+    auto proof = build_proof(leaves, index);
+    std::cout << "proof.steps: " << proof.steps.size() << "\n";
+    bool ok = verify_proof(leaves[index], proof, R);
+    std::cout << "verify[" << index << "]: " << (ok ? "OK" : "FAIL") << "\n";
+    if (!parts[index].empty()) {
+      auto wrong = sha256(std::string(parts[index].size(), parts[index][0] == 'A' ? 'B' : 'A'));
+      bool bad = verify_proof(wrong, proof, R);
+      std::cout << "verify tampered: " << (bad ? "UNEXPECTED_OK" : "EXPECTED_FAIL") << "\n";
+    }
     return 0;
   }
 

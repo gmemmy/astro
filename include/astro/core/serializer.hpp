@@ -19,6 +19,10 @@ namespace astro::core {
       void write_u32(uint32_t value) { write_le_value(value); }
       void write_u64(uint64_t value) { write_le_value(value); }
 
+      void write_raw(std::span<const uint8_t> bytes) {
+        buffer_.insert(buffer_.end(), bytes.begin(), bytes.end());
+      }
+
       void write_bytes(std::span<const uint8_t> bytes) {
         write_u32(static_cast<uint32_t>(bytes.size()));
         buffer_.insert(buffer_.end(), bytes.begin(), bytes.end());
