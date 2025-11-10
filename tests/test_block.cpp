@@ -8,8 +8,8 @@ using namespace astro::core;
 TEST(BlockHeader, SerializeAndHashDeterminism) {
   BlockHeader header;
   header.version = 1;
-  header.prev_hash = {}; // zeros
-  header.merkle_root = {}; // zeros
+  header.prev_hash = {}; 
+  header.merkle_root = {};
   header.timestamp = 1700000000ULL;
   header.nonce = 123;
 
