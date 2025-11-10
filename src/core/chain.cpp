@@ -10,6 +10,11 @@ namespace astro::core {
     return blocks_.back().header.hash();
   }
 
+  const Block* Chain::block_at(size_t index) const {
+    if (index >= blocks_.size()) return nullptr;
+    return &blocks_[index];
+  }
+
   static bool is_zero_hash(const Hash256& hash) {
     for (auto byte : hash) if (byte != 0) return false;
     return true;

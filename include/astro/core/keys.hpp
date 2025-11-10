@@ -22,6 +22,11 @@ namespace astro::core {
  * Returns true on success.
  */
  bool crypto_init();
+ 
+ /**
+  * Cleanup crypto subsystem resources; optional but recommended before process exit.
+  */
+ void crypto_shutdown();
 
 /**
  * Generate a new EC keypair using the named curve (e.g., "secp256k1").
