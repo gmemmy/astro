@@ -1,11 +1,10 @@
 #include "astro/core/keys.hpp"
-#include "astro/core/hash.hpp"
-
 #include <openssl/evp.h>
 #include <openssl/core_names.h>
 #include <openssl/params.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
+#include <openssl/crypto.h>
 
 #include <stdexcept>
 #include <memory>
@@ -54,6 +53,10 @@ namespace astro::core {
     }
     ERR_load_crypto_strings();
     return true;
+  }
+ 
+  void crypto_shutdown() {
+    OPENSSL_cleanup();
   }
 
   KeyPair generate_ec_keypair(const std::string& curve_name) {

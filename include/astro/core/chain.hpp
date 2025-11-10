@@ -33,6 +33,7 @@ namespace astro::core {
 
       std::optional<Hash256> tip_hash() const;
       const Block* tip() const { return blocks_.empty() ? nullptr : &blocks_.back();}
+      const Block* block_at(size_t index) const;
 
       ValidationResult validate_block(const Block& block) const;
 

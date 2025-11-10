@@ -163,6 +163,26 @@ endif()
 set_target_properties(astro-node PROPERTIES OUTPUT_NAME "astro-node")
 install(TARGETS astro-node RUNTIME DESTINATION bin)
 
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/tui.cpp)
+  add_executable(astro-tui src/cli/tui.cpp)
+  target_include_directories(astro-tui PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+  )
+  if(TARGET astro_core)
+    target_link_libraries(astro-tui PRIVATE astro_core)
+  endif()
+  if(OpenSSL_FOUND)
+    if(TARGET OpenSSL::Crypto)
+      target_link_libraries(astro-tui PRIVATE OpenSSL::Crypto)
+    else()
+      target_link_libraries(astro-tui PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+    endif()
+  endif()
+  set_target_properties(astro-tui PROPERTIES OUTPUT_NAME "astro-tui")
+  install(TARGETS astro-tui RUNTIME DESTINATION bin)
+endif()
+
 if(ASTRO_BUILD_TESTS)
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests)
     enable_testing()
