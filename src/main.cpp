@@ -10,6 +10,7 @@
 #include <astro/core/serializer.hpp>
 #include <astro/core/block.hpp>
 #include <astro/core/merkle.hpp>
+#include <astro/core/chain.hpp>
 #include <chrono>
 
 using namespace astro::core;
@@ -21,7 +22,8 @@ static void print_usage() {
     "  astro-node demo-keys [--curve CURVE] [--message MESSAGE]\n"
     "  astro-node demo-tx   [--amount N] [--nonce N] [--to LABEL]\n"
     "  astro-node demo-genesis\n"
-    "  astro-node demo-merkle [--leaves CSV] [--index N]\n\n"
+    "  astro-node demo-merkle [--leaves CSV] [--index N]\n"
+    "  astro-node demo-chain\n\n"
     "Options:\n"
     "  --curve    EC curve name (default: secp256k1)\n"
     "  --message  Message to sign (default: 'astro demo')\n"
@@ -216,6 +218,34 @@ int main(int argc, char** argv) {
       std::cout << "verify tampered: " << (bad ? "UNEXPECTED_OK" : "EXPECTED_FAIL") << "\n";
     }
     return 0;
+  }
+
+  if (command == "demo-chain") {
+    if (!crypto_init()) {
+      std::fprintf(stderr, "crypto_init failed\n");
+      return 1;
+    }
+    Chain chain;
+    uint64_t t0 = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::seconds>(
+                   std::chrono::system_clock::now().time_since_epoch()).count());
+    auto genesis = make_genesis_block("Astro begins", t0);
+    auto res0 = chain.append_block(genesis);
+    std::cout << "append genesis: " << (res0.is_valid ? "OK" : "FAIL") << "\n";
+
+    auto key_pair = generate_ec_keypair();
+    Transaction tx;
+    tx.version = 1; tx.nonce = 1; tx.amount = 42;
+    tx.from_pub_pem = key_pair.pubkey_pem; tx.to_label = "alice";
+    tx.sign(key_pair.privkey_pem);
+
+    auto block1 = chain.build_block_from_transactions({tx}, t0 + 1);
+    auto res1 = chain.append_block(block1);
+    std::cout << "append block #2: " << (res1.is_valid ? "OK" : "FAIL") << "\n";
+    if (auto th = chain.tip_hash()) {
+      std::cout << "tip: " << to_hex(std::span<const uint8_t>(th->data(), th->size())) << "\n";
+      std::cout << "height: " << chain.height() << "\n";
+    }
+    return res1.is_valid ? 0 : 2;
   }
 
   print_usage();

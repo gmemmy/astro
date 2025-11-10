@@ -27,7 +27,6 @@ namespace astro::core {
     std::vector<uint8_t> serialize() const;
   };
 
-  // ------- Utilities -------
   Hash256 compute_merkle_root(const std::vector<Transaction>& transactions);
   Hash256 empty_merkle_root();
 
