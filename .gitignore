@@ -47,3 +47,7 @@ devcontainer.json
 # Local env
 .env
 .env.*
+
+# Terminalizer
+/demo.yml
+/config.yml

@@ -45,7 +45,7 @@ TEST(Block, MerkleRootFromTransactions) {
 
   Transaction tx_a;
   tx_a.version = 1; tx_a.nonce = 1; tx_a.amount = 10;
-  tx_a.from_pub_pem = key_pair.pubkey_pem; tx_a.to_label = "alice";
+  tx_a.from_pub_pem = key_pair.pubkey_pem; tx_a.to_label = "darth vader";
   tx_a.sign(key_pair.privkey_pem);
 
   Transaction tx_b = tx_a;

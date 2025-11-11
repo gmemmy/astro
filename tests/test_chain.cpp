@@ -32,7 +32,7 @@ TEST(Chain, AppendGenesisThenValidBlock) {
   ASSERT_FALSE(kp.pubkey_pem.empty());
   Transaction tx;
   tx.version = 1; tx.nonce = 1; tx.amount = 10;
-  tx.from_pub_pem = kp.pubkey_pem; tx.to_label = "alice";
+  tx.from_pub_pem = kp.pubkey_pem; tx.to_label = "darth vader";
   tx.sign(kp.privkey_pem);
 
   Block b1 = c.build_block_from_transactions({tx}, t0 + 1);
