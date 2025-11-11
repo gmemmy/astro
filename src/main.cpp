@@ -235,7 +235,7 @@ int main(int argc, char** argv) {
     auto key_pair = generate_ec_keypair();
     Transaction tx;
     tx.version = 1; tx.nonce = 1; tx.amount = 42;
-    tx.from_pub_pem = key_pair.pubkey_pem; tx.to_label = "alice";
+    tx.from_pub_pem = key_pair.pubkey_pem; tx.to_label = "darth vader";
     tx.sign(key_pair.privkey_pem);
 
     auto block1 = chain.build_block_from_transactions({tx}, t0 + 1);

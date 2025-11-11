@@ -174,7 +174,7 @@ static bool do_append_signed_block(App& app) {
   transaction.nonce   = 1 + (tip->transactions.empty() ? 0 : tip->transactions.back().nonce);
   transaction.amount  = 42;
   transaction.from_pub_pem = key_pair.pubkey_pem;
-  transaction.to_label = "alice";
+  transaction.to_label = "darth vader";
   transaction.sign(key_pair.privkey_pem);
 
   uint64_t unix_time = static_cast<uint64_t>(

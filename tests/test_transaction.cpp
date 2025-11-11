@@ -15,7 +15,7 @@ TEST(Transaction, RoundTripAndVerify) {
   transaction.nonce   = 42;
   transaction.amount  = 1000;
   transaction.from_pub_pem = key_pair.pubkey_pem;   // PEM bytes
-  transaction.to_label     = "alice";
+  transaction.to_label     = "darth vader";
 
   // sign
   transaction.sign(key_pair.privkey_pem);
@@ -35,7 +35,7 @@ TEST(Transaction, RoundTripAndVerify) {
   auto pubkey_bytes = reader.read_bytes();
   EXPECT_FALSE(pubkey_bytes.empty());
   auto to_label  = reader.read_string();
-  EXPECT_EQ(to_label, "alice");
+  EXPECT_EQ(to_label, "darth vader");
   auto signature_bytes = reader.read_bytes();
   EXPECT_FALSE(signature_bytes.empty());
 

@@ -1,9 +1,10 @@
 #include "astro/core/chain.hpp"
 #include "astro/core/block.hpp"
+#include "astro/core/pow.hpp"
 #include <cstdint>
 
 namespace astro::core {
-  Chain::Chain() = default;
+  Chain::Chain(ChainConfig config) : config_(config) {};
 
   std::optional<Hash256> Chain::tip_hash() const {
     if (blocks_.empty()) return std::nullopt;
@@ -62,6 +63,17 @@ namespace astro::core {
       if (is_genesis_candidate && i == 0 && tx.from_pub_pem.empty()) continue;
       if (!tx.verify()) {
         return {false, ValidationError::BadTransactionSignature, i};
+      }
+    }
+
+    if (config_.difficulty_bits > 0) {
+      if (is_genesis_candidate && !config_.enforce_genesis_pow) {
+        // No POW check for genesis block if not enforced
+      } else {
+        auto header_hash = block.header.hash();
+        if (!pow::meets_difficulty(config_.difficulty_bits, header_hash)) {
+          return {false, ValidationError::InsufficientPOW, ~0ull};
+        }
       }
     }
     return {true, ValidationError::None, ~0ull};
