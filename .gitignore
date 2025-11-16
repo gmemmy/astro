@@ -51,3 +51,6 @@ devcontainer.json
 # Terminalizer
 /demo.yml
 /config.yml
+
+# Runtime data
+/data/

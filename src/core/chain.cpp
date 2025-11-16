@@ -1,9 +1,11 @@
 #include "astro/core/chain.hpp"
 #include "astro/core/block.hpp"
 #include "astro/core/pow.hpp"
+#include "astro/storage/block_store.hpp"
 #include <cstdint>
 
 namespace astro::core {
+  
   Chain::Chain(ChainConfig config) : config_(config) {};
 
   std::optional<Hash256> Chain::tip_hash() const {
@@ -86,6 +88,26 @@ namespace astro::core {
     return validation_result;
   }
 
+  void Chain::restore_from_store(astro::storage::BlockStore& store) {
+    auto stored_blocks = store.load_all_blocks();
+    for (const auto& block : stored_blocks) {
+      auto validation_result = append_block(block);
+      if (!validation_result.is_valid) break;
+    }
+  }
+
+  ValidationResult Chain::append_and_store(const Block& block, astro::storage::BlockStore& store) {
+    auto validation_result = validate_block(block);
+    if (!validation_result.is_valid) return validation_result;
+    try {
+      store.append_block(block);
+    } catch (...) {
+      return {false, ValidationError::None, ~0ull};
+    }
+    blocks_.push_back(block);
+    return validation_result;
+  }
+
   Block Chain::build_block_from_transactions(std::vector<Transaction> transactions, uint64_t timestamp) const {
     Block output;
     output.transactions = std::move(transactions);
@@ -98,5 +120,6 @@ namespace astro::core {
     output.header = header;
     return output;
   }
+
 
 }
