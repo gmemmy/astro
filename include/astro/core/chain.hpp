@@ -4,7 +4,8 @@
 #include <optional>
 #include "astro/core/block.hpp"
 #include "astro/core/transaction.hpp"
-#include "astro/core/pow.hpp"
+
+namespace astro { namespace storage { class BlockStore; } }
 
 namespace astro::core {
 
@@ -49,6 +50,15 @@ namespace astro::core {
       ValidationResult append_block(const Block& block);
 
       Block build_block_from_transactions(std::vector<Transaction> transactions, uint64_t timestamp) const;
+
+      // Load blocks from the block store (verifies each via validate_block).
+      // If the chain is empty, the first valid block becomes genesis.
+      void restore_from_store(astro::storage::BlockStore& store);
+
+      // Validate then append AND persist atomically.
+      ValidationResult append_and_store(const Block& block, astro::storage::BlockStore& store);
+
+      const std::vector<Block>& blocks() const { return blocks_; }
 
     private:
       ChainConfig config_{};

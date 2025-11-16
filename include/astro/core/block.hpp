@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <vector>
-#include <span>
 #include <string>
 #include "astro/core/hash.hpp"
 #include "astro/core/transaction.hpp"

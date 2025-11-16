@@ -12,11 +12,13 @@
 #include <termios.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <filesystem>
 
 #include "astro/core/chain.hpp"
 #include "astro/core/keys.hpp"
 #include "astro/core/hash.hpp"
 #include "astro/core/block.hpp"
+#include "astro/storage/block_store.hpp"
 
 using namespace astro::core;
 
@@ -121,7 +123,7 @@ struct KeyDebounce {
   }
 };
 
-} // namespace tui
+}
 
 static std::string short_hash(const Hash256& h, size_t keep = 10) {
   auto hex = to_hex(std::span<const uint8_t>(h.data(), h.size()));
@@ -133,14 +135,17 @@ struct LogLine { std::string text; int color = 37; };
 
 struct App {
   Chain chain;
+  astro::storage::BlockStore store{std::filesystem::path("./data")};
   std::vector<LogLine> log;
   size_t max_log = 200;
 
   size_t chain_scroll = 0;
+  bool dirty = true;
 
   void push_log(std::string s, int color=37) {
     log.push_back({std::move(s), color});
     if (log.size() > max_log) log.erase(log.begin(), log.begin()+ (log.size()-max_log));
+    dirty = true;
   }
 };
 
@@ -154,9 +159,10 @@ static bool do_genesis(App& app) {
     std::chrono::duration_cast<std::chrono::seconds>(
       std::chrono::system_clock::now().time_since_epoch()).count());
   Block genesis_block = make_genesis_block("Astro: Born from bytes.", unix_time);
-  auto validation_result = app.chain.append_block(genesis_block);
+  auto validation_result = app.chain.append_and_store(genesis_block, app.store);
   if (validation_result.is_valid) {
     app.push_log("genesis appended ✓", 32);
+    app.dirty = true;
     return true;
   } else {
     app.push_log("genesis append failed", 31);
@@ -181,7 +187,7 @@ static bool do_append_signed_block(App& app) {
     std::chrono::duration_cast<std::chrono::seconds>(
       std::chrono::system_clock::now().time_since_epoch()).count());
   Block new_block = app.chain.build_block_from_transactions({transaction}, unix_time);
-  auto validation_result = app.chain.append_block(new_block);
+  auto validation_result = app.chain.append_and_store(new_block, app.store);
   if (validation_result.is_valid) { app.push_log("block appended ✓", 32); return true; }
   app.push_log("append failed (validation error)", 31);
   return false;
@@ -300,6 +306,10 @@ int main() {
 
   App app;
   tui::FPS fps;
+  app.chain.restore_from_store(app.store);
+  if (app.chain.height() > 0) {
+    app.push_log("restored chain from ./data", 36);
+  }
   app.push_log("TUI started", 36);
   app.push_log("Press G to create genesis", 33);
   int rows = 36, cols = 120;
@@ -313,6 +323,8 @@ int main() {
   using clock = std::chrono::steady_clock;
   auto next = clock::now();
   tui::KeyDebounce debounce;
+  auto last_draw = clock::now();
+  const auto min_draw_interval = std::chrono::milliseconds(120);
 
   while (tui::g_running) {
     for (int k; (k = tui::read_key()) != -1; ) {
@@ -326,8 +338,13 @@ int main() {
       }
     }
 
-    draw(app, rows, cols, fps);
-    fps.tick();
+    auto now = clock::now();
+    if (app.dirty || (now - last_draw) >= min_draw_interval) {
+      draw(app, rows, cols, fps);
+      fps.tick();
+      app.dirty = false;
+      last_draw = now;
+    }
 
     next += std::chrono::milliseconds(33);
     std::this_thread::sleep_until(next);
